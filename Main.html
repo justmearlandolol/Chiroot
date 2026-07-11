@@ -1812,7 +1812,7 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
           <input type="url" id="input-spotify-url" class="sketch-input" placeholder="https://open.spotify.com/track/..." inputmode="url" autocomplete="off" style="flex: 1; min-width:220px; font-size: 14px;">
           <button type="button" id="btn-spotify-fetch" class="btn-primary sketch-border-soft" style="padding: 0 15px; min-height:44px; white-space: nowrap;">Ambil Data</button>
         </div>
-        <p class="file-hint" style="margin-top:5px;">Tempel link track Spotify untuk mengisi Judul, Artis, & Cover.</p>
+        <p class="file-hint" style="margin-top:5px;">Tempel link track Spotify untuk mengisi Judul, Artis, & Cover. Tapi masih harus download mp3 nya ya lol</p>
       </div>
 
       <form id="add-form" class="add-form" novalidate>
@@ -1967,9 +1967,9 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
           <div style="font-family:'Kalam',sans-serif; font-size:14px; color:#7a6548; text-transform:uppercase; letter-spacing:0.5px;">✦ Credits</div>
           <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px; font-family:'Kalam',sans-serif; font-size:14px; color:#5b4630;">
             <div>Developer: <span style="color:#d84a3a;font-weight:600;">[Arlando D.A]</span></div>
-            <div>Designer: <span style="color:#c9a227;font-weight:600;">[Figma]</span></div>
+            <div>Website Designer: <span style="color:#c9a227;font-weight:600;">Mancaw | Figma</span></div>
             <div>Illustrator: <span style="color:#3a8a6a;font-weight:600;">[Nuclear | Open Source Audio Player]</span></div>
-            <div>Special Thanks: <span style="color:#b65a9a;font-weight:600;">[Team ArlDev]</span></div>
+            <div>Special Thanks: <span style="color:#b65a9a;font-weight:600;">[ChirootDevTeam]</span></div>
           </div>
         </div>
       </div>
@@ -2105,18 +2105,15 @@ const TOP10_SONGS = [
 const LS_KEY = 'gramophone_playlist_v2';
 const LS_STATE = 'gramophone_state_v2';
 
-// Security limits for backup/restore. Keep imported JSON sane so a malicious/huge
-// backup file can't freeze the browser or inject unexpected URL types.
-const MAX_IMPORT_BACKUP_BYTES = 60 * 1024 * 1024; // 60 MB .json backup cap
+
+const MAX_IMPORT_BACKUP_BYTES = 60 * 1024 * 1024; 
 const MAX_IMPORTED_TRACKS = 150;
-const MAX_AUDIO_DATA_URL_CHARS = 18 * 1024 * 1024; // roughly 12-13 MB raw MP3
-const MAX_COVER_DATA_URL_CHARS = 7 * 1024 * 1024;  // roughly 5 MB raw image
+const MAX_AUDIO_DATA_URL_CHARS = 18 * 1024 * 1024; 
+const MAX_COVER_DATA_URL_CHARS = 7 * 1024 * 1024;  
 const AUDIO_DATA_MIME_RE = /^(audio\/(mpeg|mp3|mpeg3|x-mpeg)|application\/octet-stream)$/i;
 const IMAGE_DATA_MIME_RE = /^image\/(png|jpe?g|webp)$/i;
 
-// Client-side throttling for expensive UI actions. This improves UX and blocks
-// accidental spam, but real anti-bot rate limiting must still be enforced at
-// CDN/hosting and Supabase Edge Function level (see notes in chat).
+
 const RATE_LIMIT_STORAGE_KEY = 'gramophone_rate_limit_v1';
 const RATE_LIMITS = {
   spotifyFetch: { max: 5, windowMs: 60 * 1000, label: 'Spotify auto-fill' },
@@ -2160,7 +2157,7 @@ function renderTop10(){
         '<div class="top10-artist">' + escapeHtml(song.artist) + '</div>' +
       '</div>' +
       '<button class="top10-add-btn' + (inCrate ? ' added' : '') + '" data-add="' + i + '">' +
-        (inCrate ? '✓ Added' : '+ Crate') +
+        (inCrate ? '✓ Added' : 'Add to Crate') +
       '</button>';
     li.addEventListener('click', function(e){
       if(e.target.closest('.top10-add-btn')) return;
@@ -2281,7 +2278,6 @@ function safeDataUrl(value, allowedMimeRe, maxChars){
   if(!meta.startsWith('data:') || !meta.endsWith(';base64')) return '';
   var mime = meta.slice(5, -7);
   if(!allowedMimeRe.test(mime)) return '';
-  // Fast base64 sanity check. It rejects HTML/SVG/script payloads disguised as data URLs.
   var payload = dataUrl.slice(comma + 1);
   if(payload.length < 16 || !/^[a-z0-9+/]+={0,2}$/i.test(payload)) return '';
   return dataUrl;
