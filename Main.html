@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chiroot | Audio Player</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Chiroot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="icon" type="image/svg+xml" href="logo.svg">
@@ -1622,15 +1624,15 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
           </div>
 
           <div class="quick-links">
-            <a href="https://www.youtube.com/" target="_blank" rel="noopener" class="quick-link">
+            <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" class="quick-link">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M23.5 6.2c-.3-1-1-1.8-2-2.1C19.6 3.5 12 3.5 12 3.5s-7.6 0-9.5.6c-1 .3-1.7 1.1-2 2.1C0 8.1 0 12 0 12s0 3.9.5 5.8c.3 1 1 1.8 2 2.1 1.9.6 9.5.6 9.5.6s7.6 0 9.5-.6c1-.3 1.7-1.1 2-2.1.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.5 15.5V8.5l6.5 3.5-6.5 3.5z"/></svg>
               Cari di YouTube
             </a>
-            <a href="https://open.spotify.com/search" target="_blank" rel="noopener" class="quick-link">
+            <a href="https://open.spotify.com/search" target="_blank" rel="noopener noreferrer" class="quick-link">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.5 17.3c-.2.3-.6.4-.9.2-2.5-1.5-5.7-1.9-9.4-1-.4.1-.7-.1-.8-.5-.1-.4.1-.7.5-.8 4.1-.9 7.6-.5 10.4 1.2.4.2.5.6.3.9zm1.5-3.3c-.3.4-.8.5-1.2.3-2.9-1.8-7.2-2.3-10.6-1.3-.4.1-.9-.1-1-.6-.1-.4.1-.9.6-1 3.9-1.2 8.7-.6 12 1.5.3.2.4.8.2 1.1zm.1-3.4C15.7 8.5 9.1 8.3 5.3 9.3c-.5.1-1-.2-1.1-.7-.1-.5.2-1 .7-1.1C9.1 6.3 16.3 6.5 20.7 9c.5.3.6.9.4 1.4-.3.4-.9.6-1.4.3z"/></svg>
               Cari di Spotify
             </a>
-            <a href="https://y2mate.gs/" target="_blank" rel="noopener" class="quick-link download">
+            <a href="https://y2mate.gs/" target="_blank" rel="noopener noreferrer" class="quick-link download">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download MP3
             </a>
@@ -2103,6 +2105,27 @@ const TOP10_SONGS = [
 const LS_KEY = 'gramophone_playlist_v2';
 const LS_STATE = 'gramophone_state_v2';
 
+// Security limits for backup/restore. Keep imported JSON sane so a malicious/huge
+// backup file can't freeze the browser or inject unexpected URL types.
+const MAX_IMPORT_BACKUP_BYTES = 60 * 1024 * 1024; // 60 MB .json backup cap
+const MAX_IMPORTED_TRACKS = 150;
+const MAX_AUDIO_DATA_URL_CHARS = 18 * 1024 * 1024; // roughly 12-13 MB raw MP3
+const MAX_COVER_DATA_URL_CHARS = 7 * 1024 * 1024;  // roughly 5 MB raw image
+const AUDIO_DATA_MIME_RE = /^(audio\/(mpeg|mp3|mpeg3|x-mpeg)|application\/octet-stream)$/i;
+const IMAGE_DATA_MIME_RE = /^image\/(png|jpe?g|webp)$/i;
+
+// Client-side throttling for expensive UI actions. This improves UX and blocks
+// accidental spam, but real anti-bot rate limiting must still be enforced at
+// CDN/hosting and Supabase Edge Function level (see notes in chat).
+const RATE_LIMIT_STORAGE_KEY = 'gramophone_rate_limit_v1';
+const RATE_LIMITS = {
+  spotifyFetch: { max: 5, windowMs: 60 * 1000, label: 'Spotify auto-fill' },
+  importBackup: { max: 3, windowMs: 10 * 60 * 1000, label: 'Restore backup' },
+  addTrack: { max: 12, windowMs: 10 * 60 * 1000, label: 'Add/Edit Music' },
+  top10Add: { max: 30, windowMs: 5 * 60 * 1000, label: 'Top 5 add' }
+};
+let __rateLimitMemory = {};
+
 let tracks = [];
 let currentIndex = 0;
 let isPlaying = false;
@@ -2163,6 +2186,7 @@ async function addTop10ToCrate(idx){
     showToast('"' + song.title + '" sudah ada di Crate – memutar...');
     return;
   }
+  if(!consumeClientRateLimit('top10Add', RATE_LIMITS.top10Add)) return;
   showToast('Menambahkan "' + song.title + '" ke Crate…');
   var audioDataUrl = null;
   try {
@@ -2238,16 +2262,42 @@ function cloneTracks(src){
   try { return structuredClone(src); } catch(e){ return JSON.parse(JSON.stringify(src)); }
 }
 
+function cleanImportedText(value, fallback, maxLen){
+  var text = String(value || '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim();
+  if(!text) text = fallback;
+  return text.slice(0, maxLen);
+}
+function cleanImportedId(value, fallback){
+  var id = String(value || fallback || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 90);
+  return id || fallback || ('s_' + Date.now());
+}
+function safeDataUrl(value, allowedMimeRe, maxChars){
+  if(typeof value !== 'string') return '';
+  var dataUrl = value.trim();
+  if(!dataUrl || dataUrl.length > maxChars) return '';
+  var comma = dataUrl.indexOf(',');
+  if(comma <= 5 || comma > 96) return '';
+  var meta = dataUrl.slice(0, comma).toLowerCase();
+  if(!meta.startsWith('data:') || !meta.endsWith(';base64')) return '';
+  var mime = meta.slice(5, -7);
+  if(!allowedMimeRe.test(mime)) return '';
+  // Fast base64 sanity check. It rejects HTML/SVG/script payloads disguised as data URLs.
+  var payload = dataUrl.slice(comma + 1);
+  if(payload.length < 16 || !/^[a-z0-9+/]+={0,2}$/i.test(payload)) return '';
+  return dataUrl;
+}
 function sanitizeTrack(t, i){
-  if(!t || typeof t!=='object') t={};
+  if(!t || typeof t !== 'object') t = {};
+  var safeAudio = safeDataUrl(t.src, AUDIO_DATA_MIME_RE, MAX_AUDIO_DATA_URL_CHARS);
+  var safeCover = safeDataUrl(t.cover, IMAGE_DATA_MIME_RE, MAX_COVER_DATA_URL_CHARS);
   return {
-    id: t.id || ('s_'+i+'_'+Date.now()),
-    title: String(t.title||'Untitled').slice(0,80),
-    artist: String(t.artist||'Unknown Artist').slice(0,80),
-    src: t.src || '',
-    labelColor: /^#([0-9a-f]{3}){1,2}$/i.test(t.labelColor||'') ? t.labelColor : '#d84a3a',
-    vinylColor: /^#([0-9a-f]{3}){1,2}$/i.test(t.vinylColor||'') ? t.vinylColor : '#1e1e24',
-    cover: (typeof t.cover==='string' && t.cover.startsWith('data:')) ? t.cover : (t.cover||null),
+    id: cleanImportedId(t.id, 's_' + i + '_' + Date.now()),
+    title: cleanImportedText(t.title, 'Untitled', 80),
+    artist: cleanImportedText(t.artist, 'Unknown Artist', 80),
+    src: safeAudio,
+    labelColor: /^#([0-9a-f]{3}){1,2}$/i.test(t.labelColor || '') ? t.labelColor : '#d84a3a',
+    vinylColor: /^#([0-9a-f]{3}){1,2}$/i.test(t.vinylColor || '') ? t.vinylColor : '#1e1e24',
+    cover: safeCover || null,
     isDemo: !!t.isDemo
   };
 }
@@ -2269,10 +2319,51 @@ function isValidCoverImage(file){
   return extOk && typeOk;
 }
 function formatBytes(b){ if(b<1024) return b+' B'; if(b<1024*1024) return (b/1024).toFixed(1)+' KB'; return (b/1024/1024).toFixed(2)+' MB'; }
+function formatWait(ms){
+  var sec = Math.max(1, Math.ceil(ms / 1000));
+  if(sec < 60) return sec + ' detik';
+  var min = Math.ceil(sec / 60);
+  return min + ' menit';
+}
+function consumeClientRateLimit(action, config){
+  config = config || { max: 10, windowMs: 60 * 1000, label: action };
+  var now = Date.now();
+  var state = __rateLimitMemory;
+  try {
+    state = JSON.parse(localStorage.getItem(RATE_LIMIT_STORAGE_KEY) || '{}') || {};
+  } catch(e) {
+    state = __rateLimitMemory || {};
+  }
 
+  var hits = Array.isArray(state[action]) ? state[action] : [];
+  hits = hits.filter(function(ts){ return typeof ts === 'number' && now - ts < config.windowMs; });
+
+  if(hits.length >= config.max){
+    var waitMs = Math.max(1000, config.windowMs - (now - hits[0]));
+    var msg = 'Terlalu banyak percobaan ' + (config.label || action) + '. Coba lagi dalam ' + formatWait(waitMs) + '.';
+    if(typeof showToast === 'function') showToast(msg);
+    else alert(msg);
+    state[action] = hits;
+    __rateLimitMemory = state;
+    try { localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+    return false;
+  }
+
+  hits.push(now);
+  state[action] = hits.slice(-config.max);
+  __rateLimitMemory = state;
+  try { localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  return true;
+}
+
+function extractImportTrackList(parsed){
+  if(Array.isArray(parsed)) return parsed;
+  if(parsed && typeof parsed === 'object' && Array.isArray(parsed.tracks)) return parsed.tracks;
+  return null;
+}
 function sanitizeCrate(list){
   if(!Array.isArray(list)) return [];
-  return list.map(sanitizeTrack).filter(t=>t.src);
+  return list.slice(0, MAX_IMPORTED_TRACKS).map(sanitizeTrack).filter(function(t){ return !!t.src; });
 }
 
 const IDB_DB = 'gramophone_v3';
@@ -2879,6 +2970,7 @@ function setupAddModal(){
       if(!isSupabaseConfigured()){
         return showToast("Isi SUPABASE_URL dan Publishable Key di Main.html dulu");
       }
+      if(!consumeClientRateLimit('spotifyFetch', RATE_LIMITS.spotifyFetch)) return;
 
       spotifyBtn.disabled = true;
       spotifyBtn.textContent = "Mengambil...";
@@ -3140,6 +3232,8 @@ function setupAddModal(){
     if (af && af.size > 12 * 1024 * 1024){
       if(!confirm('This audio file is >12MB. Storing it in the browser may fail or be slow. Continue?')) return;
     }
+
+    if(!consumeClientRateLimit('addTrack', RATE_LIMITS.addTrack)) return;
 
     const submitBtnEl = form.querySelector('button[type=submit]');
     submitBtnEl.disabled = true;
@@ -3868,7 +3962,9 @@ function setupSettings(){
     const a = document.createElement('a');
     a.href = url;
     a.download = 'doodle-gramophone-crate.json';
+    a.rel = 'noopener noreferrer';
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     showToast("Crate berhasil di-backup! 💾");
   });
 
@@ -3877,29 +3973,78 @@ function setupSettings(){
   $('#btn-import-data').addEventListener('click', () => inputImport.click());
   inputImport.addEventListener('change', (e) => {
     const file = e.target.files[0];
+    const clearImportInput = () => { inputImport.value = ''; };
     if(!file) return;
+
+    const fileName = (file.name || '').toLowerCase();
+    const fileType = (file.type || '').toLowerCase();
+    const typeLooksSafe = !fileType || fileType === 'application/json' || fileType === 'text/json' || fileType === 'text/plain' || fileType === 'application/octet-stream';
+
+    if(!/\.json$/i.test(fileName)){
+      alert('Restore ditolak: file backup harus berekstensi .json');
+      clearImportInput();
+      return;
+    }
+    if(!typeLooksSafe){
+      alert('Restore ditolak: tipe file bukan JSON (' + fileType + ').');
+      clearImportInput();
+      return;
+    }
+    if(file.size > MAX_IMPORT_BACKUP_BYTES){
+      alert('Restore ditolak: file backup terlalu besar (' + formatBytes(file.size) + '). Maksimal ' + formatBytes(MAX_IMPORT_BACKUP_BYTES) + '.');
+      clearImportInput();
+      return;
+    }
+    if(!consumeClientRateLimit('importBackup', RATE_LIMITS.importBackup)){
+      clearImportInput();
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const importedTracks = JSON.parse(event.target.result);
-        if(Array.isArray(importedTracks)) {
-          if(!confirm("Restore akan mengganti semua lagu di Crate saat ini. Lanjut?")) return;
-          tracks = sanitizeCrate(importedTracks);
-          await savePlaylist();
-          renderPlaylist();
-          renderTop10();
-          loadTrack(0, false, true);
-          showToast("Crate berhasil dipulihkan! 📂");
-          close();
-        } else {
-          alert("Format file tidak valid!");
+        const rawText = String(event.target.result || '');
+        if(rawText.length > MAX_IMPORT_BACKUP_BYTES * 1.4){
+          throw new Error('Ukuran isi JSON terlalu besar.');
         }
+
+        const parsed = JSON.parse(rawText);
+        const importList = extractImportTrackList(parsed);
+        if(!importList) {
+          alert('Format file tidak valid. Backup harus berupa array track atau object { tracks: [...] }.');
+          return;
+        }
+
+        const sanitized = sanitizeCrate(importList);
+        const dropped = importList.length - sanitized.length;
+        if(!sanitized.length){
+          alert('Tidak ada track valid di backup. Audio harus berupa data:audio/mpeg;base64, data:audio/mp3;base64, atau data:application/octet-stream;base64.');
+          return;
+        }
+
+        const limited = importList.length > MAX_IMPORTED_TRACKS ? ' Import dibatasi ke ' + MAX_IMPORTED_TRACKS + ' track pertama.' : '';
+        const droppedMsg = dropped > 0 ? '\n\nCatatan: ' + dropped + ' track/field tidak valid dibuang demi keamanan.' : '';
+        if(!confirm('Restore akan mengganti semua lagu di Crate saat ini dengan ' + sanitized.length + ' track valid.' + limited + droppedMsg + '\n\nLanjut?')) return;
+
+        tracks = sanitized;
+        currentIndex = 0;
+        await savePlaylist();
+        renderPlaylist();
+        renderTop10();
+        loadTrack(0, false, true);
+        showToast('Crate berhasil dipulihkan dengan aman! 📂');
+        close();
       } catch(err) {
-        alert("Gagal membaca file: " + err.message);
+        alert('Gagal membaca file backup: ' + (err && err.message ? err.message : err));
+      } finally {
+        clearImportInput();
       }
     };
-    reader.readAsText(file);
-    inputImport.value = '';
+    reader.onerror = () => {
+      alert('Gagal membaca file backup.');
+      clearImportInput();
+    };
+    reader.readAsText(file, 'UTF-8');
   });
 
 
@@ -3958,6 +4103,5 @@ document.addEventListener('DOMContentLoaded', init);
 
 setInterval(saveState, 6000);
 window.addEventListener('beforeunload', saveState);
-</script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a192a6111bd75cb5',t:'MTc4MzcxODgwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a199551be93afe18',t:'MTc4Mzc4ODg5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
