@@ -904,6 +904,19 @@ body{
   .playlist-thumb{ width:46px; height:46px;}
   .playlist-meta .p-title{ font-size:19px;}
 }
+@media (max-width: 560px){
+  #add-modal .modal-card{
+    max-width: 94%;
+    padding: 18px 14px 16px;
+    margin: 10px;
+  }
+  #add-modal .modal-title{ font-size:26px; }
+  #add-modal .modal-sub{ font-size:13px; }
+  #add-modal .sketch-input{ font-size:15px; padding:8px 10px; }
+  #add-modal .form-grid{ gap:10px; }
+  #add-modal .swatches .swatch,
+  #add-modal .vswatch{ width:26px; height:26px; }
+}
 @media (max-width: 420px){
   .tonearm-pivot{ transform: scale(.78); right:2px; top:0;}
 }
@@ -1540,10 +1553,10 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
     <div class="preloader-inner">
       <div class="preloader-card">
 
-        <span class="corner-doodle tl">✦</span>
-        <span class="corner-doodle tr">✦</span>
-        <span class="corner-doodle bl">✦</span>
-        <span class="corner-doodle br">✦</span>
+        <span class="corner-doodle tl"></span>
+        <span class="corner-doodle tr"></span>
+        <span class="corner-doodle bl"></span>
+        <span class="corner-doodle br"></span>
 
         <div class="content-group">
 
@@ -1586,6 +1599,8 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
       </div>
     </div>
   </div>
+
+  <div id="wifi-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;padding:7px 14px;font-size:13px;text-align:center;font-family:'Kalam',sans-serif;border-bottom:2px solid #1a1a1a;background:#fff9e8;color:#5a4630;box-shadow:0 2px 6px rgba(0,0,0,0.1);"></div>
 
   <main class="player-shell">
     <div class="paper-card sketch-border">
@@ -4099,5 +4114,30 @@ document.addEventListener('DOMContentLoaded', init);
 
 setInterval(saveState, 6000);
 window.addEventListener('beforeunload', saveState);
+
+const wifiBanner = document.getElementById('wifi-banner');
+function updateWifiBanner(){
+  if(!wifiBanner) return;
+  if(!navigator.onLine){
+    wifiBanner.style.display = 'block';
+    wifiBanner.style.background = '#ffe3e3';
+    wifiBanner.style.color = '#b42318';
+    wifiBanner.style.borderBottomColor = '#b42318';
+    wifiBanner.textContent = 'No connection / Lost signal';
+  } else {
+    wifiBanner.style.display = 'block';
+    wifiBanner.style.background = '#e8f5e9';
+    wifiBanner.style.color = '#2a6a2a';
+    wifiBanner.style.borderBottomColor = '#2a6a2a';
+    wifiBanner.textContent = 'WiFi reconnected';
+    setTimeout(function(){
+      if(wifiBanner) wifiBanner.style.display = 'none';
+    }, 2600);
+  }
+}
+window.addEventListener('online', updateWifiBanner);
+window.addEventListener('offline', updateWifiBanner);
+if(!navigator.onLine) updateWifiBanner();
+else { if(wifiBanner) wifiBanner.style.display = 'none'; }
 </script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a199551be93afe18',t:'MTc4Mzc4ODg5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
