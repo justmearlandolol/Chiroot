@@ -776,12 +776,13 @@ body{
 .modal-overlay.open{ display:flex; }
 .modal-card{
   width:100%;
-  max-width:640px;
+  max-width:480px;
   background: linear-gradient(180deg, #fffdf7, #f8f0dc);
-  padding:26px 22px 22px;
+  padding:16px 14px 14px;
   position:relative;
   box-shadow: 0 18px 50px rgba(40,24,8,.28);
   animation: paperPop .34s cubic-bezier(.22,1.2,.36,1);
+  border-radius:6px;
 }
 @keyframes paperPop{
   from{ transform: translateY(16px) scale(.97) rotate(-1deg); opacity:0;}
@@ -807,11 +808,11 @@ body{
   font-family:'Kalam',sans-serif;
   color:#7a6548;
 }
-.add-form .form-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
+  .add-form .form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
 .field{ display:flex; flex-direction:column; gap:5px; font-family:'Kalam',sans-serif; font-size:14px; color:#5b4630;}
 .field span{ font-size:14px;}
 .sketch-input{
@@ -906,16 +907,19 @@ body{
 }
 @media (max-width: 560px){
   #add-modal .modal-card{
-    max-width: 94%;
-    padding: 18px 14px 16px;
-    margin: 10px;
+    max-width: 92%;
+    padding: 14px 12px 12px;
+    margin: 6px;
   }
-  #add-modal .modal-title{ font-size:26px; }
-  #add-modal .modal-sub{ font-size:13px; }
+  #add-modal .modal-title{ font-size:20px; }
+  #add-modal .modal-sub{ font-size:12px; }
   #add-modal .sketch-input{ font-size:15px; padding:8px 10px; }
   #add-modal .form-grid{ gap:10px; }
   #add-modal .swatches .swatch,
   #add-modal .vswatch{ width:26px; height:26px; }
+  #add-modal .modal-actions button{ font-size:15px; padding:9px 14px; }
+  #add-modal .label-picker{ margin-top:12px; gap:9px; }
+  #add-modal .file-hint{ font-size:12px; }
 }
 @media (max-width: 420px){
   .tonearm-pivot{ transform: scale(.78); right:2px; top:0;}
@@ -1312,6 +1316,44 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
 .record-label.has-cover-art{
   box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25), 0 0 18px rgba(201,162,39,0.18), 0 2px 6px rgba(0,0,0,0.22);
 }
+
+.vinyl-3d {
+  perspective: 920px;
+  width: 268px;
+  height: 268px;
+  position: relative;
+  margin: 0 auto;
+}
+.vinyl-3d-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+.vinyl-3d .record {
+  width: 100%;
+  height: 100%;
+  transform: rotateX(62deg) rotateZ(0deg);
+  box-shadow: 0 48px 85px rgba(0,0,0,0.55),
+              inset 0 0 0 12px #0e0e13,
+              inset 0 0 0 26px #1a1a20;
+  border: 14px solid #0c0c11;
+  transition: transform 0.6s ease;
+}
+.vinyl-3d .record-grooves {
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,0.08);
+}
+.vinyl-3d.playing .vinyl-3d-inner {
+  animation: spin3d 3.8s linear infinite;
+}
+@keyframes spin3d {
+  to { transform: rotateX(62deg) rotateZ(360deg); }
+}
+.vinyl-3d .record-label {
+  transform: translate(-50%,-50%) rotateX(-62deg) scale(0.84);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.5);
+}
 .record:hover .label-inner.has-cover img.label-cover{
   transform: scale(1.03);
   transition: transform .4s ease;
@@ -1653,6 +1695,27 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
             </a>
           </div>
 
+          <div style="text-align:center;margin:6px 0 10px; position:relative;">
+            <button id="btn-lyrics" class="mini-btn sketch-border-tiny" 
+                    style="font-size:12px;padding:3px 9px;height:32px;width:32px;display:flex;align-items:center;justify-content:center;"
+                    title="Lyrics">
+              <svg fill="#000000" height="24" width="24" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve">
+                <g>
+                  <g>
+                    <g>
+                      <path d="M456.326,119.157c-1.247-6.573-7.575-10.898-14.16-9.646c-6.574,1.247-10.892,7.587-9.646,14.16 c2.661,14.031-0.053,28.341-7.644,40.298c-3.585,5.649-1.912,13.135,3.738,16.722c2.012,1.278,4.26,1.889,6.481,1.889 c4.01-0.001,7.933-1.991,10.241-5.626C456.234,159.783,460.137,139.256,456.326,119.157z"></path>
+                      <path d="M434.992,95.706c4.811-4.65,4.941-12.32,0.291-17.131c-0.308-0.319-0.619-0.634-0.933-0.949 c-4.736-4.724-12.407-4.719-17.135,0.019c-4.725,4.737-4.718,12.407,0.019,17.133c0.212,0.21,0.419,0.422,0.625,0.635 c2.377,2.459,5.543,3.695,8.712,3.695C429.604,99.111,432.64,97.98,434.992,95.706z"></path>
+                      <path d="M163.449,347.559c-21.676,17.738-39.68,32.563-56.665,46.655c-5.149,4.273-5.86,11.911-1.587,17.061 c2.396,2.887,5.849,4.38,9.33,4.38c2.725,0,5.468-0.916,7.73-2.793c16.941-14.057,34.907-28.849,56.536-46.551 c5.178-4.238,5.94-11.871,1.703-17.049C176.26,344.083,168.629,343.321,163.449,347.559z"></path>
+                      <path d="M191.902,324.314c-5.184,4.229-5.96,11.862-1.73,17.046c2.395,2.937,5.881,4.458,9.396,4.458 c2.692,0,5.402-0.893,7.651-2.727l4.328-3.53c5.187-4.227,5.963-11.86,1.736-17.045c-4.227-5.185-11.861-5.963-17.045-1.737 L191.902,324.314z"></path>
+                      <path d="M460.432,239.843c4.288-3.347,8.39-6.968,12.276-10.854C498.045,203.651,512,169.967,512,134.139 s-13.954-69.512-39.291-94.85C447.375,13.955,413.691,0.003,377.862,0c-0.001,0-0.002,0-0.002,0 c-35.831,0-69.517,13.953-94.851,39.288c-3.887,3.888-7.501,7.995-10.848,12.283l-9.05-9.05c-4.732-4.731-12.401-4.731-17.135,0 c-4.731,4.731-4.731,12.402,0,17.135l12.796,12.795c-10.244,19.789-15.496,42.002-14.996,64.631 C226.872,157.369,71.417,347.709,32.011,394.523c-16.889,20.063-16.63,48.677,0.017,68.315L3.548,491.317 c-4.731,4.731-4.731,12.403,0,17.134c2.366,2.366,5.465,3.549,8.567,3.549c3.102,0,6.201-1.182,8.568-3.549l28.482-28.482 c9.859,8.36,21.975,12.6,34.144,12.6c12.071,0,24.187-4.16,34.177-12.571c46.872-39.455,237.426-195.099,257.443-211.774 c0.978,0.022,1.955,0.042,2.931,0.042c21.613,0,42.759-5.242,61.688-15.039l12.797,12.797c2.366,2.366,5.466,3.549,8.567,3.549 s6.201-1.182,8.567-3.549c4.731-4.731,4.731-12.402,0-17.135L460.432,239.843z M101.881,461.46 c-11.522,9.701-28.242,8.988-38.889-1.649l-5.366-5.366c-0.012-0.012-0.022-0.025-0.034-0.037s-0.025-0.022-0.037-0.034 l-5.366-5.366c-10.635-10.645-11.34-27.36-1.64-38.881c39.53-46.96,137.017-166.569,146.968-178.752l83.116,83.117 C268.509,324.394,148.901,421.88,101.881,461.46z M342.603,263.576c-13.128,10.87-27.275,22.518-43.12,35.499l-86.55-86.551 c12.897-15.747,24.541-29.895,35.494-43.121l-0.001-0.023c6.081,22.378,17.919,42.944,34.583,59.609 c16.666,16.666,37.232,28.503,59.605,34.583L342.603,263.576z M371.431,243.846c-26.888-1.547-52.206-12.909-71.289-31.992 c-19.083-19.082-30.445-44.399-31.993-71.301c-1.012-17.277,2.095-34.356,8.803-49.923l144.416,144.416 C405.802,241.755,388.722,244.862,371.431,243.846z M443.137,222.548L289.45,68.862c3.231-4.378,6.795-8.543,10.693-12.439 c20.76-20.76,48.361-32.192,77.719-32.19c29.356,0.001,56.956,11.434,77.713,32.192c42.853,42.853,42.853,112.578,0,155.432 C451.679,215.752,447.516,219.316,443.137,222.548z"></path>
+                    </g>
+                  </g>
+                </g>
+              </svg>
+            </button>
+            <span class="lyrics-tooltip" style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:#7a6548;opacity:0;pointer-events:none;transition:opacity .2s;">Lyrics</span>
+          </div>
+
           <div class="turntable-base sketch-border-soft">
             <div class="wood-grain g1"></div>
             <div class="wood-grain g2"></div>
@@ -1950,6 +2013,23 @@ body:not(.is-playing) .np-bar span{ animation-play-state: paused; opacity:.55; }
           <button type="button" class="btn-secondary sketch-border-soft" id="btn-report-reset-stats">↺ Reset Stats</button>
           <button type="button" class="btn-primary sketch-border-soft" id="btn-report-ok">Tutup Laporan</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lyrics Modal -->
+  <div class="modal-overlay" id="lyrics-modal" aria-hidden="true">
+    <div class="modal-card sketch-border" style="max-width:620px;">
+      <button class="modal-close sketchy" id="btn-lyrics-close" aria-label="Close">✕</button>
+      <h3 class="modal-title" id="lyrics-modal-title">Lyrics</h3>
+      <p class="modal-sub" id="lyrics-modal-artist"></p>
+      
+      <div id="lyrics-content" style="max-height:420px; overflow:auto; padding:12px 4px; font-family:'Kalam',sans-serif; font-size:15.5px; line-height:1.65; white-space:pre-wrap; color:#3a2f22; background:#fffdf7; border:2px solid #1a1a1a; border-radius:12px;">
+      </div>
+      
+      <div class="modal-actions" style="margin-top:16px; justify-content:space-between; align-items:center;">
+        <button type="button" class="btn-secondary sketch-border-soft" id="btn-lyrics-refresh" style="font-size:13px;">↻ Refresh Lyrics</button>
+        <button type="button" class="btn-secondary sketch-border-soft" id="btn-lyrics-close2">Tutup</button>
       </div>
     </div>
   </div>
@@ -4139,5 +4219,146 @@ window.addEventListener('online', updateWifiBanner);
 window.addEventListener('offline', updateWifiBanner);
 if(!navigator.onLine) updateWifiBanner();
 else { if(wifiBanner) wifiBanner.style.display = 'none'; }
+
+let is3D = false;
+const btn3d = document.getElementById('btn-3d-toggle');
+const vinylStage = document.getElementById('vinyl-stage');
+const gramo3d = document.getElementById('gramo-3d');
+
+function toggle3D(){
+  is3D = !is3D;
+  if(is3D){
+    if(vinylStage) vinylStage.style.display = 'none';
+    if(gramo3d) gramo3d.style.display = 'block';
+    if(btn3d) btn3d.textContent = '2D View';
+  } else {
+    if(vinylStage) vinylStage.style.display = 'flex';
+    if(gramo3d) gramo3d.style.display = 'none';
+    if(btn3d) btn3d.textContent = '3D View';
+  }
+}
+
+// Lyrics Feature (Frontend only - lyrics.ovh)
+const btnLyrics = document.getElementById('btn-lyrics');
+const lyricsModal = document.getElementById('lyrics-modal');
+const lyricsClose = document.getElementById('btn-lyrics-close');
+const lyricsClose2 = document.getElementById('btn-lyrics-close2');
+const lyricsTitle = document.getElementById('lyrics-modal-title');
+const lyricsArtist = document.getElementById('lyrics-modal-artist');
+const lyricsContent = document.getElementById('lyrics-content');
+
+// Hover tooltip
+const lyricsTooltip = document.querySelector('.lyrics-tooltip');
+if (btnLyrics && lyricsTooltip) {
+  btnLyrics.addEventListener('mouseenter', () => lyricsTooltip.style.opacity = '1');
+  btnLyrics.addEventListener('mouseleave', () => lyricsTooltip.style.opacity = '0');
+}
+
+async function fetchLyricsFromAPI(artist, title) {
+  if (!artist || !title) return null;
+  if (!isSupabaseConfigured()) {
+    // Fallback to LRCLIB if Supabase not configured
+    try {
+      const searchUrl = `https://lrclib.net/api/search?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
+      const searchRes = await fetch(searchUrl, {
+        headers: { "User-Agent": "Chiroot/1.0" }
+      });
+      
+      if (!searchRes.ok) return null;
+      const searchData = await searchRes.json();
+      
+      if (!searchData || searchData.length === 0) return null;
+      
+      const track = searchData[0];
+      return track.syncedLyrics || track.plainLyrics || null;
+    } catch (e) {
+      console.warn('LRCLIB fallback error:', e);
+      return null;
+    }
+  }
+
+  try {
+    const functionUrl = String(SUPABASE_URL).trim().replace(/\/+$/, '') + '/functions/v1/get-lyrics';
+
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'apikey': String(SUPABASE_PUBLISHABLE_KEY).trim()
+      },
+      body: JSON.stringify({ artist, title })
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.lyrics || null;
+  } catch (e) {
+    console.warn('Supabase get-lyrics error:', e);
+    return null;
+  }
+}
+
+async function openLyricsModal() {
+  const track = tracks[currentIndex];
+  if (!track) return;
+
+  lyricsTitle.textContent = track.title || 'Untitled';
+  lyricsArtist.textContent = track.artist || '';
+  lyricsContent.innerHTML = `<div style="text-align:center;color:#8b745b;padding:20px;">Mencari lyrics...</div>`;
+
+  lyricsModal.classList.add('open');
+  lyricsModal.setAttribute('aria-hidden', 'false');
+
+  // Try to get lyrics
+  let lyricsText = track.lyrics && track.lyrics.trim() ? track.lyrics : null;
+
+  if (!lyricsText) {
+    lyricsText = await fetchLyricsFromAPI(track.artist, track.title);
+  }
+
+  if (lyricsText && lyricsText.trim()) {
+    lyricsContent.innerHTML = escapeHtml(lyricsText).replace(/\n/g, '<br>');
+  } else {
+    lyricsContent.innerHTML = `
+      <div style="text-align:center;padding:30px 10px;color:#8b745b;">
+        <div style="font-size:32px;margin-bottom:8px;"></div>
+        <div style="font-size:15px;">Lyrics tidak ditemukan</div>
+        <div style="font-size:12px;margin-top:6px;opacity:0.7;">Coba tambah manual saat Add/Edit Music</div>
+      </div>
+    `;
+  }
+}
+
+function closeLyricsModal() {
+  lyricsModal.classList.remove('open');
+  lyricsModal.setAttribute('aria-hidden', 'true');
+}
+
+if (btnLyrics) btnLyrics.addEventListener('click', openLyricsModal);
+if (lyricsClose) lyricsClose.addEventListener('click', closeLyricsModal);
+if (lyricsClose2) lyricsClose2.addEventListener('click', closeLyricsModal);
+lyricsModal.addEventListener('click', (e) => {
+  if (e.target === lyricsModal) closeLyricsModal();
+});
+
+// Refresh button
+const btnRefreshLyrics = document.getElementById('btn-lyrics-refresh');
+if (btnRefreshLyrics) {
+  btnRefreshLyrics.addEventListener('click', async () => {
+    const track = tracks[currentIndex];
+    if (!track) return;
+    
+    lyricsContent.innerHTML = `<div style="text-align:center;color:#8b745b;padding:20px;">Mencari lyrics...</div>`;
+    
+    const freshLyrics = await fetchLyricsFromAPI(track.artist, track.title);
+    
+    if (freshLyrics) {
+      lyricsContent.innerHTML = escapeHtml(freshLyrics).replace(/\n/g, '<br>');
+    } else {
+      lyricsContent.innerHTML = `<div style="text-align:center;color:#8b745b;padding:20px;">Lyrics tidak ditemukan lagi.</div>`;
+    }
+  });
+}
 </script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a199551be93afe18',t:'MTc4Mzc4ODg5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
